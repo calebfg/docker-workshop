@@ -7,30 +7,32 @@
 #
 # This script is a data ingestion pipeline.
 # It downloads the NYC Yellow Taxi trip dataset from the web
-# and loads it into a PostgreSQL database table called yellow_taxi_data.
+# and loads it into a PostgreSQL database table.
 #
 # STEP 1 — SETUP
 # We define the data types for each column so pandas reads them
 # correctly instead of guessing. We also tell pandas which columns
 # are dates so they are stored as proper timestamps, not plain text.
 #
-# STEP 2 — DATABASE CONNECTION
+# STEP 2 — CONFIGURATION VIA COMMAND LINE
+# All settings (database credentials, year, month, table name) are
+# passed in as command line arguments using click. If no arguments
+# are provided, sensible defaults are used automatically.
+#
+# STEP 3 — DATABASE CONNECTION
 # We create a connection configuration (engine) that tells SQLAlchemy
 # where PostgreSQL is running and how to log in.
 # No actual connection is made yet at this point.
 #
-# STEP 3 — SAFETY CHECK
-# Before inserting anything, we check if the table already exists.
-# If it does, we wipe it clean (TRUNCATE) so that running this script
-# more than once does not create duplicate rows.
-#
 # STEP 4 — READ IN CHUNKS
 # The dataset has 1.3 million rows. Instead of loading everything
 # into memory at once, we read 100,000 rows at a time.
-# This keeps memory usage low and makes the script scalable.
+# This keeps memory usage low and makes the script scalable to
+# arbitrarily large files.
 #
 # STEP 5 — CREATE THE TABLE
 # We use the first chunk to create the table structure in PostgreSQL.
+# If the table already exists it is dropped and recreated (replace).
 # No data is inserted yet — just the column names and types.
 #
 # STEP 6 — INSERT DATA
@@ -39,7 +41,11 @@
 # the ingestion is.
 #
 # STEP 7 — DONE
-# All 1.3 million rows are now in PostgreSQL and ready to be queried.
+# All rows are now in PostgreSQL and ready to be queried.
+#
+# NOTE: This script uses if_exists='replace' which drops and recreates
+# the table on every run. This is safe for development and testing
+# but should not be used in production where data must be preserved.
 #
 # ═══════════════════════════════════════════════════════════════════
 

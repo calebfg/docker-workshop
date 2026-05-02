@@ -126,25 +126,31 @@ def ingest_data(url, engine, target_table, chunksize=100000):
 
 # ── Main function ─────────────────────────────────────────────────────────────
 
-def main():
-    # Database connection credentials
-    pg_user = 'root'
-    pg_pass = 'root'
-    pg_host = 'localhost'
-    pg_port = 5432
-    pg_db   = 'ny_taxi'
+import click
 
-    # Dataset configuration — change these to ingest a different month
-    year         = 2021
-    month        = 1
-    chunksize    = 100000
-    target_table = 'yellow_taxi_data'
+# @click.command() turns main() into a command line tool
+# @click.option() defines each argument you can pass from the terminal
+# default= is the fallback value if you don't pass that argument
+# type=int means click converts the string input to an integer automatically
+# help= is the description shown when you run: python ingest_data.py --help
+@click.command()
+@click.option('--pg-user',      default='root',             help='PostgreSQL username')
+@click.option('--pg-pass',      default='root',             help='PostgreSQL password')
+@click.option('--pg-host',      default='localhost',        help='PostgreSQL host')
+@click.option('--pg-port',      default='5432',             help='PostgreSQL port')
+@click.option('--pg-db',        default='ny_taxi',          help='PostgreSQL database name')
+@click.option('--year',         default=2021,  type=int,    help='Year of the data')
+@click.option('--month',        default=1,     type=int,    help='Month of the data')
+@click.option('--chunksize',    default=100000,type=int,    help='Chunk size for ingestion')
+@click.option('--target-table', default='yellow_taxi_data', help='Target table name')
 
-    # Build the database connection using the credentials above
+
+def main(pg_user, pg_pass, pg_host, pg_port, pg_db, year, month, chunksize, target_table):
+    # Build the database connection using the credentials passed from terminal
     # does NOT open a connection yet — just stores the configuration
     engine = create_engine(f'postgresql://{pg_user}:{pg_pass}@{pg_host}:{pg_port}/{pg_db}')
 
-    # Build the URL dynamically so changing year/month above is all you need
+    # Build the URL dynamically using year and month passed from terminal
     # :04d ensures year is always 4 digits (e.g. 2021)
     # :02d ensures month is always 2 digits (e.g. 01, 02 ... 12)
     url_prefix = 'https://github.com/DataTalksClub/nyc-tlc-data/releases/download/yellow'
@@ -157,8 +163,6 @@ def main():
         target_table=target_table,
         chunksize=chunksize
     )
-
-# ── Entry point ───────────────────────────────────────────────────────────────
 
 # This means: only run main() if this file is executed directly
 # If this file is imported by another script, main() will NOT run automatically

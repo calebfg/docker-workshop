@@ -1,0 +1,77 @@
+# docker-compose.yaml
+
+# NOTE: taxi_ingest is intentionally excluded from this file.
+# PostgreSQL and pgAdmin are long-running services that should
+# always be available. The ingestion pipeline is a one-time job
+# that should be run separately and on demand only when new data
+# needs to be loaded. Mixing one-time jobs with persistent services
+# in the same compose file causes unnecessary re-ingestion on every
+# docker-compose up.
+#
+# To run the ingestion pipeline manually:
+# docker run -it --rm \
+#   --network=pipeline_default \
+#   taxi_ingest:v001 \
+#   --pg-user=root \
+#   --pg-pass=root \
+#   --pg-host=pgdatabase \
+#   --pg-port=5432 \
+#   --pg-db=ny_taxi \
+#   --target-table=yellow_taxi_trips_2021_2 \
+#   --year=2021 \
+#   --month=2 \
+#   --chunksize=100000
+
+services:
+
+  # ── PostgreSQL database ─────────────────────────────────────────
+  pgdatabase:
+    image: postgres:18
+    environment:
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=root
+      - POSTGRES_DB=ny_taxi
+    volumes:
+      # named volume — persists data even after container is stopped
+      - ny_taxi_postgres_data:/var/lib/postgresql
+    ports:
+      # maps your machine's port 5432 to the container's port 5432
+      - "5432:5432"
+    healthcheck:
+      # pg_isready checks if PostgreSQL is actually ready to accept connections
+      # -d ny_taxi specifies the correct database to avoid FATAL log noise
+      # -U root specifies the user to check with
+      test: ["CMD-SHELL", "pg_isready -U root -d ny_taxi"]
+      # check every 5 seconds
+      interval: 5s
+      # wait up to 5 seconds for each check to respond
+      timeout: 5s
+      # retry 5 times before declaring the container unhealthy
+      retries: 5
+      # wait 5 seconds before running the first check
+      # gives PostgreSQL time to start initialising before we even try
+      start_period: 5s
+
+  # ── pgAdmin visual interface ────────────────────────────────────
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@admin.com
+      - PGADMIN_DEFAULT_PASSWORD=root
+    volumes:
+      # saves pgAdmin settings so you don't reconfigure after every restart
+      - pgadmin_data:/var/lib/pgadmin
+    ports:
+      # access pgAdmin at http://localhost:8085 in your browser
+      - "8085:80"
+    depends_on:
+      pgdatabase:
+        # waits until pgdatabase passes its health check
+        # not just started — actually ready to accept connections
+        condition: service_healthy
+
+# ── Named volumes ───────────────────────────────────────────────────
+volumes:
+  # declared here so Docker Compose manages them
+  ny_taxi_postgres_data:
+  pgadmin_data:

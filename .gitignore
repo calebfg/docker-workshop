@@ -1,3 +1,9 @@
+# The state file can contain sensitive information
+*.tfstate
+*.tfstate.backup
+.terraform/
+
+
 *.parquet
 *.json
 

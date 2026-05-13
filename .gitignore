@@ -1,3 +1,6 @@
+# Google Cloud SDK
+google-cloud-sdk/
+
 # The state file can contain sensitive information
 *.tfstate
 *.tfstate.backup

@@ -1,0 +1,42 @@
+# docker-compose.yaml
+# Shared services for all modules
+# Run with: docker-compose up -d from the Homework folder
+
+services:
+
+  # ── PostgreSQL database ─────────────────────────────────────────
+  pgdatabase:
+    image: postgres:18
+    environment:
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=root
+      - POSTGRES_DB=ny_taxi
+    volumes:
+      - ny_taxi_homework_data:/var/lib/postgresql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root -d ny_taxi"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  # ── pgAdmin visual interface ────────────────────────────────────
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@admin.com
+      - PGADMIN_DEFAULT_PASSWORD=root
+    volumes:
+      - homework_pgadmin_data:/var/lib/pgadmin
+    ports:
+      - "8086:80"
+    depends_on:
+      pgdatabase:
+        condition: service_healthy
+
+# ── Named volumes ───────────────────────────────────────────────────
+volumes:
+  ny_taxi_homework_data:
+  homework_pgadmin_data:
